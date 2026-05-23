@@ -8,6 +8,7 @@ import { Project, ProfileInfo } from './types';
 import { getProjects, getProfile, seedDatabase } from './services/projectService';
 import { auth, logout } from './lib/firebase';
 import { getDirectImageUrl } from './lib/imageUtils';
+import { PRESET_ICONS_MAP, getIconConfig } from './lib/presetIcons';
 
 const ADMIN_EMAILS = ['giangcong1089@gmail.com', 'giangcong10899@gmail.com', 'congga@s-connect.net'];
 
@@ -202,7 +203,13 @@ export default function App() {
 
               <div className="relative shrink-0">
                 <div 
-                  className={`w-[84px] h-[84px] rounded-full flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 ${(!project.icon && !project.icons?.length && project.iconType !== 'book' && project.iconType !== 'blue-image') ? 'bg-white shadow-xl ring-1 ring-slate-100' : ''}`}
+                  className={`w-[84px] h-[84px] rounded-full flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 ${
+                    (project.icons && project.icons.length > 0) || project.icon
+                      ? 'bg-transparent'
+                      : project.iconType && project.iconType !== 'loading'
+                      ? `${getIconConfig(project.iconType).bgClass} shadow-xl ring-1 ring-slate-100/50`
+                      : 'bg-white shadow-xl ring-1 ring-slate-100'
+                  }`}
                   style={project.iconBg ? { backgroundColor: project.iconBg } : {}}
                 >
                   {(project.icons && project.icons.length > 0) ? (
@@ -241,20 +248,20 @@ export default function App() {
                         }
                       }}
                     />
-                  ) : project.iconType === 'blue-image' ? (
-                    <div className="w-full h-full bg-white flex items-center justify-center shadow-inner">
-                      <Chrome size={40} className="text-blue-500 drop-shadow-sm" />
-                    </div>
-                  ) : project.iconType === 'book' ? (
-                    <div className="w-full h-full bg-blue-500 flex items-center justify-center shadow-inner">
-                      <BookOpen size={40} className="text-white" />
-                    </div>
                   ) : project.iconType === 'loading' ? (
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center bg-white w-full h-full shadow-xl ring-1 ring-slate-100">
                       <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
                     </div>
+                  ) : PRESET_ICONS_MAP[project.iconType || 'default'] ? (
+                    (() => {
+                      const IconComponent = PRESET_ICONS_MAP[project.iconType || 'default'];
+                      const config = getIconConfig(project.iconType);
+                      return (
+                        <IconComponent size={36} className={`${config.colorClass} drop-shadow-sm`} />
+                      );
+                    })()
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-blue-600 leading-none">
+                    <div className="flex flex-col items-center justify-center text-blue-600 leading-none bg-white w-full h-full shadow-xl ring-1 ring-slate-100">
                       <Zap size={32} className="mb-0.5 text-blue-500 drop-shadow-sm" />
                       <span className="font-extrabold text-[8px] tracking-tighter">VEO3</span>
                     </div>

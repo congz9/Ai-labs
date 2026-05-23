@@ -16,7 +16,7 @@ service cloud.firestore {
         request.auth.token.email == 'giangcong1089@gmail.com' || 
         request.auth.token.email == 'giangcong10899@gmail.com' ||
         request.auth.token.email == 'congga@s-connect.net'
-      ) && request.auth.token.email_verified == true;
+      );
     }
 
     function isValidId(id) {

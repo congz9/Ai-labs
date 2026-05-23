@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { X, Plus, Save, Trash2, Image, Link, Type, Tag, Layout, Hash, Zap, BookOpen, Chrome, Upload } from 'lucide-react';
+import { X, Plus, Save, Trash2, Image, Link, Pencil, Tag, Layout, Hash, Zap, BookOpen, Chrome, Upload } from 'lucide-react';
 import { Project, ProfileInfo } from '../types';
 import { saveProject, deleteProject, updateProfile } from '../services/projectService';
 import { getDirectImageUrl, fileToBase64 } from '../lib/imageUtils';
+import { PRESET_ICONS, PRESET_ICONS_MAP, getIconConfig } from '../lib/presetIcons';
 
 interface AdminPanelProps {
   projects: Project[];
@@ -16,6 +17,7 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
   const [editingProject, setEditingProject] = useState<Partial<Project> | null>(null);
   const [editProfile, setEditProfile] = useState<ProfileInfo>(profile);
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const projectIconInputRef = useRef<HTMLInputElement>(null);
   const profileLogoInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,14 +66,26 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
     }
   };
 
-  const handleDeleteProject = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
+  const handleDeleteProject = async (p: Project) => {
+    if (!p.id) {
+      alert('Dự án này đang hiển thị tạm thời dưới dạng mặc định và chưa có trong Database. Bạn cần lưu/chỉnh sửa dự án này trước, hoặc liên hệ Admin.');
+      return;
+    }
     setIsLoading(true);
     try {
-      await deleteProject(id);
+      await deleteProject(p.id);
+      setDeleteConfirmId(null);
       onRefresh();
-    } catch (e) {
-      alert('Lỗi khi xóa dự án');
+    } catch (e: any) {
+      console.error('Delete failed:', e);
+      let errorMsg = 'Lỗi khi xóa dự án';
+      try {
+        const parsed = JSON.parse(e.message);
+        if (parsed.error) errorMsg += `: ${parsed.error}`;
+      } catch {
+        if (e.message) errorMsg += `: ${e.message}`;
+      }
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -199,19 +213,68 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
                         )}
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-400">Icon Type (Mặc định nếu URL trống)</label>
-                      <select 
-                        value={editingProject.iconType || 'default'} 
-                        onChange={e => setEditingProject({...editingProject, iconType: e.target.value as any, icon: e.target.value === 'default' ? editingProject.icon : ''})}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
-                      >
-                        <option value="default">Mặc định (Icon Tia sét)</option>
-                        <option value="loading">Đang tải (Spin animation)</option>
-                        <option value="blue-image">Chrome/Blue Image</option>
-                        <option value="flow-veo">Flow Veo (Zap + Text)</option>
-                        <option value="book">Sách (Book Icon)</option>
-                      </select>
+                    <div className="col-span-2 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                          Chọn Icon có sẵn ({PRESET_ICONS.length + 1} lựa chọn)
+                        </label>
+                        {editingProject.iconType && (
+                          <button 
+                            type="button"
+                            onClick={() => setEditingProject({...editingProject, iconType: undefined})}
+                            className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            Xóa lựa chọn icon
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 bg-slate-100 p-3 rounded-2xl max-h-[220px] overflow-y-auto border border-slate-200">
+                        {/* Loading Icon item */}
+                        <button
+                          type="button"
+                          onClick={() => setEditingProject({...editingProject, iconType: 'loading', icon: ''})}
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-200 ${
+                            editingProject.iconType === 'loading' 
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100 ring-2 ring-blue-500 ring-offset-2 scale-95' 
+                              : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                          title="Đang tải (Spinning)"
+                        >
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            <div className={`w-5 h-5 border-2 rounded-full animate-spin ${editingProject.iconType === 'loading' ? 'border-white/30 border-t-white' : 'border-slate-300 border-t-blue-500'}`}></div>
+                          </div>
+                          <span className={`text-[9px] mt-1 font-bold truncate max-w-full text-center ${editingProject.iconType === 'loading' ? 'text-white' : 'text-slate-500'}`}>Loading</span>
+                        </button>
+
+                        {PRESET_ICONS.map((preset) => {
+                          const IconComp = preset.component;
+                          const isSelected = editingProject.iconType === preset.id || (!editingProject.iconType && preset.id === 'default' && !editingProject.icon);
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => setEditingProject({...editingProject, iconType: preset.id as any, icon: ''})}
+                              className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-200 ${
+                                isSelected 
+                                  ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100 ring-2 ring-blue-600 ring-offset-2 scale-95' 
+                                  : 'bg-white border-slate-100 text-slate-700 hover:border-blue-200 hover:bg-slate-50 font-medium'
+                              }`}
+                              title={preset.label}
+                            >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-white/20' : preset.bgClass}`}>
+                                <IconComp 
+                                  size={18} 
+                                  className={isSelected ? 'text-white' : preset.colorClass} 
+                                />
+                              </div>
+                              <span className={`text-[9.5px] mt-1 font-bold truncate w-full text-center ${isSelected ? 'text-white' : 'text-slate-500'}`}>
+                                {preset.id === 'default' ? 'Tia sét' : preset.label.split(' ')[0]}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-slate-400">Thứ tự</label>
@@ -221,6 +284,24 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
                         onChange={e => setEditingProject({...editingProject, order: parseInt(e.target.value)})}
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Màu nền Icon (Ví dụ: #ffffff hoặc transparent)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={editingProject.iconBg || ''} 
+                          onChange={e => setEditingProject({...editingProject, iconBg: e.target.value})}
+                          className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                          placeholder="Bỏ trống, transparent, #ffffff, #e31e24..."
+                        />
+                        {editingProject.iconBg && (
+                          <div 
+                            className="w-12 h-12 rounded-xl border border-slate-200 shadow-inner shrink-0" 
+                            style={{ backgroundColor: editingProject.iconBg }} 
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-6 flex gap-3">
@@ -245,19 +326,30 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
                 {projects.map(p => (
                   <div key={p.id || p.title} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 transition-all group">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden">
+                      <div 
+                        className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden"
+                        style={p.iconBg ? { backgroundColor: p.iconBg } : {}}
+                      >
                         {p.icon ? (
                           <img src={getDirectImageUrl(p.icon)} className="w-8 h-8 object-cover" />
-                        ) : p.iconType === 'book' ? (
-                          <div className="w-full h-full bg-blue-500 flex items-center justify-center">
-                            <BookOpen size={20} className="text-white" />
+                        ) : p.iconType === 'loading' ? (
+                          <div className="w-full h-full bg-slate-50 flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
                           </div>
-                        ) : p.iconType === 'blue-image' ? (
-                          <div className="w-full h-full bg-white flex items-center justify-center">
-                            <Chrome size={20} className="text-blue-500 shadow-sm" />
-                          </div>
+                        ) : PRESET_ICONS_MAP[p.iconType || 'default'] ? (
+                          (() => {
+                            const IconComp = PRESET_ICONS_MAP[p.iconType || 'default'];
+                            const config = getIconConfig(p.iconType);
+                            return (
+                              <div className={`w-full h-full flex items-center justify-center ${config.bgClass}`}>
+                                <IconComp size={20} className={config.colorClass} />
+                              </div>
+                            );
+                          })()
                         ) : (
-                          <Zap size={20} className="text-blue-500" />
+                          <div className="w-full h-full bg-blue-50 flex items-center justify-center">
+                            <Zap size={20} className="text-blue-500" />
+                          </div>
                         )}
                       </div>
                       <div>
@@ -265,19 +357,57 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
                         <p className="text-[10px] text-slate-400 uppercase tracking-wider">{p.badge}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => setEditingProject(p)}
-                        className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                      >
-                        <Type size={18} />
-                      </button>
-                      <button 
-                        onClick={() => p.id && handleDeleteProject(p.id)}
-                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    <div className="flex items-center gap-2">
+                      {deleteConfirmId === p.id ? (
+                        <div className="flex items-center gap-2 bg-red-50 p-1.5 rounded-xl border border-red-100 animate-in fade-in zoom-in-95 duration-200">
+                          <span className="text-[11px] font-bold text-red-600 px-1">Xóa?</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteProject(p);
+                            }}
+                            className="px-2.5 py-1 bg-red-600 text-white text-[11px] font-bold rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                          >
+                            Xóa
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmId(null);
+                            }}
+                            className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold rounded-lg hover:bg-slate-50 transition-colors"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProject(p);
+                            }}
+                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                            title="Sửa"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!p.id) {
+                                alert('Dự án này đang hiển thị tạm thời dưới dạng mặc định và chưa có trong Database. Bạn cần lưu/chỉnh sửa dự án này trước, hoặc liên hệ Admin.');
+                                return;
+                              }
+                              setDeleteConfirmId(p.id);
+                            }}
+                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            title="Xóa"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
