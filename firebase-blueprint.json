@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A tool or project in the ecosystem",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "link": { "type": "string" },
+        "badge": { "type": "string" },
+        "icon": { "type": "string" },
+        "status": { "type": "string" },
+        "order": { "type": "number" },
+        "gradient": { "type": "string" }
+      },
+      "required": ["title", "link", "badge", "status", "order"]
+    },
+    "Profile": {
+      "title": "Profile",
+      "description": "Personal and brand information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "brandName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "facebook": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "projects": {
+      "schema": "Project",
+      "description": "Collection of projects"
+    },
+    "profile/main": {
+      "schema": "Profile",
+      "description": "Global profile configuration"
+    }
+  }
+}
