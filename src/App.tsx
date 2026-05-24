@@ -45,6 +45,12 @@ export default function App() {
     return () => unsubscribe?.();
   }, []);
 
+  useEffect(() => {
+    if (profile) {
+      document.title = `${profile.name} ${profile.brandName}`.trim() || 'CÔNGZ AI LABS';
+    }
+  }, [profile]);
+
   const fetchData = async () => {
     const [pList, prof] = await Promise.all([getProjects(), getProfile()]);
     setProjects(pList);
