@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Coffee, Heart, Copy, Check, QrCode, CreditCard, Sparkles, Maximize2 } from 'lucide-react';
+import { X, Coffee, Heart, Copy, Check, QrCode, CreditCard, Sparkles, Maximize2, DollarSign, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProfileInfo } from '../types';
 
@@ -10,13 +10,13 @@ interface CoffeeModalProps {
 
 const PRESET_AMOUNTS = [
   { value: 20000, label: '☕ 20k', desc: 'Mời một ly cà phê ấm áp' },
-  { value: 50000, label: '🍕 50k', desc: 'Mời một bữa sáng nhiều năng lượng' },
+  { value: 50000, label: '🥤 50k', desc: 'Mời một đồ uống full topping' },
   { value: 100000, label: '🚀 100k', desc: 'Tiếp thêm động lực đột phá' },
   { value: 0, label: '💎 Tùy tâm', desc: 'Ủng hộ theo ý của bạn' },
 ];
 
 export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
-  const [activeTab, setActiveTab] = useState<'bank' | 'momo'>('bank');
+  const [activeTab, setActiveTab] = useState<'bank' | 'momo' | 'paypal'>('bank');
   const [amount, setAmount] = useState<number>(20000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<number>(20000);
@@ -86,6 +86,24 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
     return `https://img.vietqr.io/image/${bankClean}-${accountClean}-compact2.jpg?amount=${currentAmount}&addInfo=${memoClean}&accountName=${nameClean}`;
   };
 
+  const getPaypalLinkWithAmount = () => {
+    return profile.paypalLink || '';
+  };
+
+  const getPaypalQRUrl = () => {
+    if (!profile.paypalLink) return '';
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profile.paypalLink)}`;
+  };
+
+  const getMomoQRUrl = () => {
+    if (!profile.momoNo) return '';
+    const currentAmount = getFinalAmount();
+    const momoLink = currentAmount > 0 
+      ? `https://nhantien.momo.vn/${profile.momoNo}/${currentAmount}`
+      : `https://nhantien.momo.vn/${profile.momoNo}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(momoLink)}`;
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-md">
       <motion.div 
@@ -135,11 +153,75 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
               <QrCode size={14} /> Ví Momo
             </button>
           )}
+          {profile.paypalLink && (
+            <button
+              onClick={() => setActiveTab('paypal')}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'paypal' ? 'bg-white shadow-sm border border-slate-100 text-sky-600' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <DollarSign size={14} /> PayPal (Quốc tế)
+            </button>
+          )}
         </div>
 
         {/* Content body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          
+          {activeTab !== 'paypal' && (
+            <>
+              {/* Visual pricing options */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Chọn mức ủng hộ</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRESET_AMOUNTS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      onClick={() => {
+                        setSelectedPreset(preset.value);
+                        if (preset.value > 0) setAmount(preset.value);
+                      }}
+                      className={`p-3 rounded-2xl border text-left transition-all relative ${
+                        selectedPreset === preset.value
+                          ? 'border-blue-500 bg-blue-50/20 text-blue-900 ring-2 ring-blue-500/10'
+                          : 'border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className="font-bold text-sm">{preset.label}</div>
+                      <div className="text-[9.5px] font-medium text-slate-400 mt-0.5 leading-snug">{preset.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional settings */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {selectedPreset === 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Số tiền tự chọn (VNĐ)</label>
+                    <input
+                      type="number"
+                      placeholder="Ví dụ: 30000"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
+                    />
+                  </div>
+                )}
+                <div className={`space-y-1.5 ${selectedPreset !== 0 ? 'col-span-2' : ''}`}>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tên của bạn (Tùy chọn)</label>
+                  <input
+                    type="text"
+                    maxLength={15}
+                    placeholder="Ví dụ: Minh"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <AnimatePresence mode="wait">
             {activeTab === 'bank' && (
               <motion.div
@@ -149,57 +231,6 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-4"
               >
-                {/* Visual pricing options */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Chọn mức ủng hộ</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PRESET_AMOUNTS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        onClick={() => {
-                          setSelectedPreset(preset.value);
-                          if (preset.value > 0) setAmount(preset.value);
-                        }}
-                        className={`p-3 rounded-2xl border text-left transition-all relative ${
-                          selectedPreset === preset.value
-                            ? 'border-blue-500 bg-blue-50/20 text-blue-900 ring-2 ring-blue-500/10'
-                            : 'border-slate-100 bg-white hover:bg-slate-50 hover:border-slate-200'
-                        }`}
-                      >
-                        <div className="font-bold text-sm">{preset.label}</div>
-                        <div className="text-[9.5px] font-medium text-slate-400 mt-0.5 leading-snug">{preset.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Optional settings */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {selectedPreset === 0 && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Số tiền tự chọn (VNĐ)</label>
-                      <input
-                        type="number"
-                        placeholder="Ví dụ: 30000"
-                        value={customAmount}
-                        onChange={(e) => setCustomAmount(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
-                      />
-                    </div>
-                  )}
-                  <div className={`space-y-1.5 ${selectedPreset !== 0 ? 'col-span-2' : ''}`}>
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tên của bạn (Tùy chọn)</label>
-                    <input
-                      type="text"
-                      maxLength={15}
-                      placeholder="Ví dụ: Minh"
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
-                    />
-                  </div>
-                </div>
-
                 {/* QR Display Container */}
                 <div className="bg-slate-50/70 rounded-3xl p-5 border border-slate-100 flex flex-col md:flex-row gap-5 items-center justify-center">
                   <button 
@@ -242,7 +273,7 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                         </button>
                       </div>
                     </div>
-
+ 
                     <div className="bg-amber-500/5 rounded-2xl p-3 border border-amber-500/10 text-[10.5px] text-amber-800 leading-normal font-semibold flex gap-2">
                       <Heart size={14} className="shrink-0 text-amber-500 mt-0.5" />
                       <span>Quét mã VietQR bằng bất kỳ ứng dụng Ngân hàng nào để chuyển tiền nhanh 24/7 cực dễ dàng.</span>
@@ -251,51 +282,156 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                 </div>
               </motion.div>
             )}
-
+ 
             {activeTab === 'momo' && (
               <motion.div
                 key="momo-tab"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className="space-y-4 text-center max-w-sm mx-auto p-4"
+                className="space-y-4"
               >
-                <div className="w-16 h-16 bg-[#a50064] rounded-2xl flex items-center justify-center text-white mx-auto shadow-md">
-                  <span className="font-extrabold text-xl">momo</span>
-                </div>
-                
-                <div className="space-y-2">
-                  <h4 className="font-bold text-slate-800">Quyên góp qua Momo</h4>
-                  <p className="text-xs text-slate-500 leading-normal">
-                    Quét hoặc copy số điện thoại Momo dưới đây để gửi ly cà phê của bạn nhé!
-                  </p>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-400 font-semibold">Tên chủ ví</span>
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-800">{profile.bankOwner || profile.name}</span>
+                {/* QR Display Container */}
+                <div className="bg-slate-50/70 rounded-3xl p-5 border border-slate-100 flex flex-col md:flex-row gap-5 items-center justify-center">
+                  <button 
+                    onClick={() => setZoomedImgUrl(getMomoQRUrl())}
+                    className="w-[170px] h-[170px] bg-white rounded-2xl p-2 border border-slate-100 shadow-sm flex items-center justify-center relative group overflow-hidden cursor-zoom-in text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    title="Bấm để phóng to mã QR"
+                  >
+                    <img 
+                      src={getMomoQRUrl()} 
+                      alt="Momo QR Code" 
+                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {/* Hover indicator overlay */}
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
+                      <span className="bg-white/20 p-1.5 rounded-full backdrop-blur-sm">
+                        <Maximize2 size={16} />
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-center">Bấm để phóng to</span>
+                    </div>
+                  </button>
+                  
+                  <div className="flex-1 space-y-3 w-full text-xs">
+                    <div className="p-3 bg-white rounded-2xl border border-slate-100 space-y-2">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-50">
+                        <span className="text-slate-400 font-semibold text-[10px] uppercase">Chủ tài khoản ví</span>
+                        <span className="font-extrabold text-[#a50064] bg-pink-50 px-2 py-0.5 rounded-md text-[10px] uppercase">MOMO</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="overflow-hidden mr-1">
+                          <p className="text-[11px] font-bold text-slate-700 truncate">{profile.bankOwner || profile.name}</p>
+                          <p className="text-[11px] font-black uppercase text-rose-600 font-mono truncate" title={profile.momoNo}>
+                            {profile.momoNo}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(profile.momoNo || '', 'momo')}
+                          className="p-2 bg-slate-50 hover:bg-pink-50 text-slate-400 hover:text-[#a50064] rounded-lg transition-colors border border-slate-100 flex items-center gap-1 shrink-0"
+                        >
+                          {copiedField === 'momo' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                          <span className="text-[10px] font-bold">{copiedField === 'momo' ? 'Xong' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+ 
+                    <div className="bg-pink-500/5 rounded-2xl p-3 border border-pink-500/10 text-[10.5px] text-pink-800 leading-normal font-semibold flex gap-2">
+                      <Heart size={14} className="shrink-0 text-pink-500 mt-0.5" />
+                      <span>Quét mã ví MoMo ở trên bằng ứng dụng MoMo để chuyển nhanh cực kỳ thuận tiện.</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200/50">
-                    <span className="text-xs text-slate-400 font-semibold">Số điện thoại</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold text-slate-800 text-rose-600 font-mono">{profile.momoNo}</span>
-                      <button
-                        onClick={() => handleCopy(profile.momoNo || '', 'momo')}
-                        className="p-1 px-2 bg-white hover:bg-slate-100 text-slate-500 rounded-md border border-slate-200 transition-colors flex items-center gap-0.5"
-                      >
-                        {copiedField === 'momo' ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
-                        <span className="text-[9px] font-bold">{copiedField === 'momo' ? 'Xong' : 'Copy'}</span>
-                      </button>
+                </div>
+ 
+                {/* Direct Action Button */}
+                <a
+                  href={getFinalAmount() > 0 ? `https://nhantien.momo.vn/${profile.momoNo}/${getFinalAmount()}` : `https://nhantien.momo.vn/${profile.momoNo}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-[#a50064] hover:bg-[#8e0055] text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-lg shadow-pink-100 hover:shadow-pink-200/40 transition-all active:scale-[0.98]"
+                >
+                  Mở ví MoMo chuyển ngay <ExternalLink size={14} />
+                </a>
+ 
+                <div className="text-[10px] text-slate-400 italic text-center leading-relaxed">
+                  *Người ủng hộ có thể quét trực tiếp mã QR chính chủ của ví này.
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'paypal' && (
+              <motion.div
+                key="paypal-tab"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-4"
+              >
+                {/* QR Display Container */}
+                <div className="bg-slate-50/70 rounded-3xl p-5 border border-slate-100 flex flex-col md:flex-row gap-5 items-center justify-center">
+                  <button 
+                    onClick={() => setZoomedImgUrl(getPaypalQRUrl())}
+                    className="w-[170px] h-[170px] bg-white rounded-2xl p-2 border border-slate-100 shadow-sm flex items-center justify-center relative group overflow-hidden cursor-zoom-in text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    title="Bấm để phóng to mã QR"
+                  >
+                    <img 
+                      src={getPaypalQRUrl()} 
+                      alt="PayPal QR Code" 
+                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {/* Hover indicator overlay */}
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
+                      <span className="bg-white/20 p-1.5 rounded-full backdrop-blur-sm">
+                        <Maximize2 size={16} />
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-center">Bấm để phóng to</span>
+                    </div>
+                  </button>
+                  
+                  <div className="flex-1 space-y-3 w-full text-xs">
+                    <div className="p-3 bg-white rounded-2xl border border-slate-100 space-y-2">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-50">
+                        <span className="text-slate-400 font-semibold text-[10px] uppercase">Tài khoản nhận</span>
+                        <span className="font-extrabold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md text-[10px] uppercase">PayPal</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="overflow-hidden mr-1">
+                          <p className="text-[11px] font-bold text-slate-700 truncate">{profile.name}</p>
+                          <p className="text-[9.5px] font-black uppercase text-slate-400 font-mono truncate max-w-[120px]" title={profile.paypalLink}>
+                            {profile.paypalLink?.replace('https://', '')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(getPaypalLinkWithAmount(), 'paypal')}
+                          className="p-2 bg-slate-50 hover:bg-sky-50 text-slate-400 hover:text-sky-600 rounded-lg transition-colors border border-slate-100 flex items-center gap-1 shrink-0"
+                        >
+                          {copiedField === 'paypal' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                          <span className="text-[10px] font-bold">{copiedField === 'paypal' ? 'Xong' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-sky-500/5 rounded-2xl p-3 border border-sky-500/10 text-[10.5px] text-sky-800 leading-normal font-semibold flex gap-2">
+                      <Heart size={14} className="shrink-0 text-sky-500 mt-0.5" />
+                      <span>Quét mã PayPal của tôi ở trên để gửi đóng góp quốc tế an toàn bằng mọi loại thẻ thanh toán.</span>
                     </div>
                   </div>
                 </div>
 
-                {profile.phone === profile.momoNo && (
-                  <div className="text-[10px] text-slate-400 italic">
-                    *Momo liên kết trực tiếp với số liên hệ của tác giả
-                  </div>
-                )}
+                {/* Direct Action Button */}
+                <a
+                  href={getPaypalLinkWithAmount()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-lg shadow-sky-100 hover:shadow-sky-200/40 transition-all active:scale-[0.98]"
+                >
+                  Mở link PayPal.Me <ExternalLink size={14} />
+                </a>
+
+                <div className="text-[10px] text-slate-400 italic text-center leading-relaxed">
+                  *Nhà hảo tâm có thể quét trực tiếp mã QR này bằng ứng dụng camera hoặc PayPal để chuyển nhanh.
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -305,7 +441,7 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
         {/* Footer info bar */}
         <div className="bg-slate-50 px-8 py-4 flex justify-between items-center border-t border-slate-100 text-[10px] font-semibold text-slate-400">
           <span className="flex items-center gap-1">
-            <Heart size={10} className="text-rose-500 fill-rose-500 animate-pulse" /> Trân trọng cảm ơn bạn!
+            <Heart size={10} className="text-rose-500 fill-rose-500 animate-pulse" />
           </span>
           <span>© {profile.name} {profile.brandName}</span>
         </div>

@@ -110,7 +110,8 @@ const defaultProfile: ProfileInfo = {
   momoNo: '0388343855',
   bankName: 'TCB', // Default Techcombank
   bankAccount: '0388343855',
-  bankOwner: 'CONG GIANG'
+  bankOwner: 'CONG GIANG',
+  paypalLink: 'https://paypal.me/Congzg'
 };
 
 export const getProjects = async (): Promise<Project[]> => {
@@ -163,7 +164,10 @@ export const getProfile = async (): Promise<ProfileInfo> => {
   try {
     const docSnap = await getDocFromServer(doc(db, PROFILE_DOC));
     if (docSnap.exists()) {
-      return docSnap.data() as ProfileInfo;
+      return {
+        ...defaultProfile,
+        ...docSnap.data()
+      } as ProfileInfo;
     }
     return defaultProfile;
   } catch (e) {

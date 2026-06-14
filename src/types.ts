@@ -25,4 +25,5 @@ export interface ProfileInfo {
   bankName?: string;
   bankAccount?: string;
   bankOwner?: string;
+  paypalLink?: string;
 }
