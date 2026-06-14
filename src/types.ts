@@ -20,4 +20,9 @@ export interface ProfileInfo {
   email: string;
   phone: string;
   facebook: string;
+  coffeeLink?: string;
+  momoNo?: string;
+  bankName?: string;
+  bankAccount?: string;
+  bankOwner?: string;
 }

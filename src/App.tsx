@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, ChevronRight, Facebook, Github, Twitter, Send, Youtube, MessageCircle, Settings, Chrome, Zap, LogOut, User, Film, Clapperboard, MonitorPlay, BookOpen } from 'lucide-react';
+import { Mail, Phone, ChevronRight, Facebook, Github, Twitter, Send, Youtube, MessageCircle, Settings, Chrome, Zap, LogOut, User, Film, Clapperboard, MonitorPlay, BookOpen, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import BackgroundCanvas from './components/BackgroundCanvas';
 import AdminPanel from './components/AdminPanel';
 import LoginModal from './components/LoginModal';
+import CoffeeModal from './components/CoffeeModal';
 import { Project, ProfileInfo } from './types';
 import { getProjects, getProfile, seedDatabase } from './services/projectService';
 import { auth, logout } from './lib/firebase';
@@ -18,6 +19,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCoffeeModal, setShowCoffeeModal] = useState(false);
 
   const [activeContact, setActiveContact] = useState<string | null>(null);
 
@@ -95,6 +97,15 @@ export default function App() {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-5 text-slate-400">
+              <button
+                onClick={() => setShowCoffeeModal(true)}
+                title="Buy Me A Coffee"
+                className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 rounded-full transition-all text-xs font-bold cursor-pointer"
+              >
+                <Coffee size={14} className="animate-pulse" />
+                <span className="hidden sm:inline font-black text-[10.5px] tracking-wider">BUY ME A COFFEE</span>
+              </button>
+              
               <a href={profile.facebook} target="_blank" rel="noopener noreferrer" title="Facebook" className="hover:text-blue-500 transition-colors duration-300">
                 <Facebook size={18} />
               </a>
@@ -293,7 +304,7 @@ export default function App() {
 
       <footer className="mt-auto w-full max-w-[1400px] mx-auto px-8 pb-10">
         <div className="pt-8 border-t border-slate-200/50">
-          <div className="flex justify-center items-center gap-12 md:gap-20">
+          <div className="flex justify-center items-center gap-8 md:gap-16 flex-wrap">
             <a href={profile.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-slate-400 hover:text-blue-600 transition-all duration-300 group">
               <Facebook size={16} className="group-hover:scale-110 transition-transform" />
               <span className="text-[10px] tracking-[0.25em] uppercase font-bold">FACEBOOK</span>
@@ -322,6 +333,13 @@ export default function App() {
                 {activeContact === 'phone-footer' ? 'COPIED!' : profile.phone}
               </span>
             </button>
+            <button 
+              onClick={() => setShowCoffeeModal(true)}
+              className="flex items-center gap-3 text-slate-400 hover:text-amber-600 transition-all duration-300 group"
+            >
+              <Coffee size={16} className="group-hover:scale-110 transition-transform text-amber-500 animate-pulse" />
+              <span className="text-[10px] tracking-[0.25em] uppercase font-bold">BUY ME A COFFEE ☕</span>
+            </button>
           </div>
         </div>
       </footer>
@@ -340,6 +358,12 @@ export default function App() {
             profile={profile}
             onRefresh={fetchData}
             onClose={() => setShowAdminPanel(false)}
+          />
+        )}
+        {showCoffeeModal && (
+          <CoffeeModal 
+            profile={profile}
+            onClose={() => setShowCoffeeModal(false)}
           />
         )}
       </AnimatePresence>

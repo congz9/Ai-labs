@@ -25,7 +25,12 @@
         "brandName": { "type": "string" },
         "email": { "type": "string" },
         "phone": { "type": "string" },
-        "facebook": { "type": "string" }
+        "facebook": { "type": "string" },
+        "coffeeLink": { "type": "string" },
+        "momoNo": { "type": "string" },
+        "bankName": { "type": "string" },
+        "bankAccount": { "type": "string" },
+        "bankOwner": { "type": "string" }
       }
     }
   },

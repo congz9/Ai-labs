@@ -495,6 +495,54 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
+
+                <div className="col-span-2 pt-4 border-t border-slate-100">
+                  <h4 className="font-bold text-slate-700 text-sm mb-3">Cấu hình Quyên góp / Ủng hộ (VietQR & Momo)</h4>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Số ví Momo (Nếu có)</label>
+                  <input 
+                    type="text" 
+                    value={editProfile.momoNo || ''} 
+                    onChange={e => setEditProfile({...editProfile, momoNo: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Ví dụ: 0388343855"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Mã ngân hàng (Để tạo VietQR, Ví dụ: MB, VCB...)</label>
+                  <input 
+                    type="text" 
+                    value={editProfile.bankName || ''} 
+                    onChange={e => setEditProfile({...editProfile, bankName: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Ví dụ: MB, VCB, TCB, ACB..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Số tài khoản ngân hàng</label>
+                  <input 
+                    type="text" 
+                    value={editProfile.bankAccount || ''} 
+                    onChange={e => setEditProfile({...editProfile, bankAccount: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Ví dụ: 0388343855"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Tên chủ tài khoản ngân hàng (Viết hoa không dấu)</label>
+                  <input 
+                    type="text" 
+                    value={editProfile.bankOwner || ''} 
+                    onChange={e => setEditProfile({...editProfile, bankOwner: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Ví dụ: GIANG CONG"
+                  />
+                </div>
               </div>
               <button 
                 onClick={handleSaveProfile}

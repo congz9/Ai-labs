@@ -12,7 +12,7 @@ import {
   Image, 
   Video, 
   Music, 
-  Globe, 
+  BrainCircuit, 
   Rocket, 
   Award, 
   Shield, 
@@ -47,7 +47,7 @@ export const PRESET_ICONS: PresetIcon[] = [
   { id: 'image', label: 'Hình ảnh / Graphics', component: Image, colorClass: 'text-pink-600', bgClass: 'bg-pink-50' },
   { id: 'video', label: 'Video / Phim ảnh', component: Video, colorClass: 'text-rose-600', bgClass: 'bg-rose-50' },
   { id: 'music', label: 'Âm nhạc / Âm thanh', component: Music, colorClass: 'text-violet-600', bgClass: 'bg-violet-50' },
-  { id: 'globe', label: 'Toàn cầu / Website', component: Globe, colorClass: 'text-cyan-600', bgClass: 'bg-cyan-50' },
+  { id: 'brain-circuit', label: 'Hệ thống / AI Circuit', component: BrainCircuit, colorClass: 'text-cyan-600', bgClass: 'bg-cyan-50' },
   { id: 'rocket', label: 'Tên lửa / Khởi nghiệp', component: Rocket, colorClass: 'text-orange-600', bgClass: 'bg-orange-50' },
   { id: 'award', label: 'Giải thưởng / Huy hiệu', component: Award, colorClass: 'text-yellow-600', bgClass: 'bg-yellow-50' },
   { id: 'shield', label: 'Bảo mật / Shield', component: Shield, colorClass: 'text-green-600', bgClass: 'bg-green-50' },
@@ -75,7 +75,8 @@ export const PRESET_ICONS_MAP: Record<string, any> = {
   image: Image,
   video: Video,
   music: Music,
-  globe: Globe,
+  globe: BrainCircuit, // Hỗ trợ dữ liệu cũ nếu dùng globe
+  'brain-circuit': BrainCircuit,
   rocket: Rocket,
   award: Award,
   shield: Shield,
@@ -89,7 +90,10 @@ export const PRESET_ICONS_MAP: Record<string, any> = {
 };
 
 export const getIconConfig = (id: string | undefined): PresetIcon => {
-  const normalizedId = id === 'blue-image' ? 'chrome' : (id || 'default');
+  let normalizedId = id === 'blue-image' ? 'chrome' : (id || 'default');
+  if (normalizedId === 'globe') {
+    normalizedId = 'brain-circuit';
+  }
   const found = PRESET_ICONS.find(i => i.id === normalizedId);
   return found || PRESET_ICONS[0]; // defaults to Zap
 };

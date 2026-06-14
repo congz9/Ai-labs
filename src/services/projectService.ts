@@ -105,7 +105,12 @@ const defaultProfile: ProfileInfo = {
   logo: 'https://lh3.googleusercontent.com/ihijfkjfhhafbhmlipiafgkanfianoeo=s256',
   email: 'giangcong1089@gmail.com',
   phone: '0388343855',
-  facebook: 'https://www.facebook.com/GiangCong08'
+  facebook: 'https://www.facebook.com/GiangCong08',
+  coffeeLink: '',
+  momoNo: '0388343855',
+  bankName: 'TCB', // Default Techcombank
+  bankAccount: '0388343855',
+  bankOwner: 'CONG GIANG'
 };
 
 export const getProjects = async (): Promise<Project[]> => {
