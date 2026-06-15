@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Coffee, Heart, Copy, Check, QrCode, CreditCard, Sparkles, Maximize2, DollarSign, ExternalLink } from 'lucide-react';
+import { X, Coffee, Heart, Copy, Check, QrCode, CreditCard, Sparkles, Maximize2, DollarSign, ExternalLink, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProfileInfo } from '../types';
+import { getDirectImageUrl } from '../lib/imageUtils';
 
 interface CoffeeModalProps {
   profile: ProfileInfo;
@@ -16,7 +17,7 @@ const PRESET_AMOUNTS = [
 ];
 
 export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
-  const [activeTab, setActiveTab] = useState<'bank' | 'momo' | 'paypal'>('bank');
+  const [activeTab, setActiveTab] = useState<'bank' | 'paypal'>('bank');
   const [amount, setAmount] = useState<number>(20000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<number>(20000);
@@ -95,21 +96,13 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profile.paypalLink)}`;
   };
 
-  const getMomoQRUrl = () => {
-    if (!profile.momoNo) return '';
-    const currentAmount = getFinalAmount();
-    const memo = getVietQRMemo();
-    const momoFormat = `2|99|${profile.momoNo.trim()}|||0|0|${currentAmount > 0 ? currentAmount : ''}|${memo}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(momoFormat)}`;
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-md">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col overflow-hidden text-slate-800"
+        className="bg-white rounded-[32px] w-full max-w-lg max-h-[90vh] shadow-2xl border border-slate-100 flex flex-col overflow-hidden text-slate-800"
       >
         {/* Header decoration banner */}
         <div className="h-28 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-blue-500/10 relative flex items-center px-8 border-b border-slate-100">
@@ -140,16 +133,6 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
               }`}
             >
               <CreditCard size={14} /> Chuyển khoản VietQR
-            </button>
-          )}
-          {profile.momoNo && (
-            <button
-              onClick={() => setActiveTab('momo')}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'momo' ? 'bg-white shadow-sm border border-slate-100 text-pink-600' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <QrCode size={14} /> Ví Momo
             </button>
           )}
           {profile.paypalLink && (
@@ -241,6 +224,7 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                       src={getVietQRUrl()} 
                       alt="VietQR Code" 
                       className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
                     />
                     {/* Hover indicator overlay */}
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
@@ -281,82 +265,6 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                 </div>
               </motion.div>
             )}
- 
-            {activeTab === 'momo' && (
-              <motion.div
-                key="momo-tab"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
-                className="space-y-4"
-              >
-                {/* QR Display Container */}
-                <div className="bg-slate-50/70 rounded-3xl p-5 border border-slate-100 flex flex-col md:flex-row gap-5 items-center justify-center">
-                  <button 
-                    onClick={() => setZoomedImgUrl(getMomoQRUrl())}
-                    className="w-[170px] h-[170px] bg-white rounded-2xl p-2 border border-slate-100 shadow-sm flex items-center justify-center relative group overflow-hidden cursor-zoom-in text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    title="Bấm để phóng to mã QR"
-                  >
-                    <img 
-                      src={getMomoQRUrl()} 
-                      alt="Momo QR Code" 
-                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                    />
-                    {/* Hover indicator overlay */}
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
-                      <span className="bg-white/20 p-1.5 rounded-full backdrop-blur-sm">
-                        <Maximize2 size={16} />
-                      </span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-center">Bấm để phóng to</span>
-                    </div>
-                  </button>
-                  
-                  <div className="flex-1 space-y-3 w-full text-xs">
-                    <div className="p-3 bg-white rounded-2xl border border-slate-100 space-y-2">
-                      <div className="flex justify-between items-center pb-2 border-b border-slate-50">
-                        <span className="text-slate-400 font-semibold text-[10px] uppercase">Chủ tài khoản ví</span>
-                        <span className="font-extrabold text-[#a50064] bg-pink-50 px-2 py-0.5 rounded-md text-[10px] uppercase">MOMO</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="overflow-hidden mr-1">
-                          <p className="text-[11px] font-bold text-slate-700 truncate">{profile.bankOwner || profile.name}</p>
-                          <p className="text-[11px] font-black uppercase text-rose-600 font-mono truncate" title={profile.momoNo}>
-                            {profile.momoNo}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleCopy(profile.momoNo || '', 'momo')}
-                          className="p-2 bg-slate-50 hover:bg-pink-50 text-slate-400 hover:text-[#a50064] rounded-lg transition-colors border border-slate-100 flex items-center gap-1 shrink-0"
-                        >
-                          {copiedField === 'momo' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                          <span className="text-[10px] font-bold">{copiedField === 'momo' ? 'Xong' : 'Copy'}</span>
-                        </button>
-                      </div>
-                    </div>
- 
-                    <div className="bg-pink-500/5 rounded-2xl p-3 border border-pink-500/10 text-[10.5px] text-pink-800 leading-normal font-semibold flex gap-2">
-                      <Heart size={14} className="shrink-0 text-pink-500 mt-0.5" />
-                      <span>Quét mã ví MoMo ở trên bằng ứng dụng MoMo để chuyển nhanh cực kỳ thuận tiện.</span>
-                    </div>
-                  </div>
-                </div>
- 
-                {/* Direct Action Button */}
-                <a
-                  href={getFinalAmount() > 0 ? `https://nhantien.momo.vn/${profile.momoNo}/${getFinalAmount()}` : `https://nhantien.momo.vn/${profile.momoNo}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-[#a50064] hover:bg-[#8e0055] text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-lg shadow-pink-100 hover:shadow-pink-200/40 transition-all active:scale-[0.98]"
-                >
-                  Mở ví MoMo chuyển ngay <ExternalLink size={14} />
-                </a>
- 
-                <div className="text-[10px] text-slate-400 italic text-center leading-relaxed">
-                  *Người ủng hộ có thể quét trực tiếp mã QR chính chủ của ví này.
-                </div>
-              </motion.div>
-            )}
 
             {activeTab === 'paypal' && (
               <motion.div
@@ -377,6 +285,7 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                       src={getPaypalQRUrl()} 
                       alt="PayPal QR Code" 
                       className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
                     />
                     {/* Hover indicator overlay */}
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
@@ -435,6 +344,11 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
             )}
           </AnimatePresence>
 
+          {/* Hidden preloader to cache QR images and eliminate loading delays when switching tabs or changing amounts */}
+          <div className="hidden" aria-hidden="true">
+            {profile.bankAccount && <img src={getVietQRUrl()} alt="preload-vietqr" />}
+            {profile.paypalLink && <img src={getPaypalQRUrl()} alt="preload-paypal" />}
+          </div>
         </div>
 
         {/* Footer info bar */}
@@ -478,6 +392,7 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                   className="w-full h-full object-contain rounded-2xl cursor-zoom-out"
                   onClick={() => setZoomedImgUrl(null)}
                   title="Bấm để thu nhỏ"
+                  referrerPolicy="no-referrer"
                 />
               </div>
 

@@ -497,18 +497,7 @@ export default function AdminPanel({ projects, profile, onRefresh, onClose }: Ad
                 </div>
 
                 <div className="col-span-2 pt-4 border-t border-slate-100">
-                  <h4 className="font-bold text-slate-700 text-sm mb-3">Cấu hình Quyên góp / Ủng hộ (VietQR, Momo & PayPal)</h4>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-400">Số ví Momo (Nếu có)</label>
-                  <input 
-                    type="text" 
-                    value={editProfile.momoNo || ''} 
-                    onChange={e => setEditProfile({...editProfile, momoNo: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="Ví dụ: 0388343855"
-                  />
+                  <h4 className="font-bold text-slate-700 text-sm mb-3">Cấu hình Quyên góp / Ủng hộ (VietQR & PayPal)</h4>
                 </div>
 
                 <div className="space-y-2">

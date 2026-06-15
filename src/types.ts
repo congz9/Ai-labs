@@ -26,4 +26,5 @@ export interface ProfileInfo {
   bankAccount?: string;
   bankOwner?: string;
   paypalLink?: string;
+  momoQr?: string;
 }
