@@ -98,10 +98,9 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
   const getMomoQRUrl = () => {
     if (!profile.momoNo) return '';
     const currentAmount = getFinalAmount();
-    const momoLink = currentAmount > 0 
-      ? `https://nhantien.momo.vn/${profile.momoNo}/${currentAmount}`
-      : `https://nhantien.momo.vn/${profile.momoNo}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(momoLink)}`;
+    const memo = getVietQRMemo();
+    const momoFormat = `2|99|${profile.momoNo.trim()}|||0|0|${currentAmount > 0 ? currentAmount : ''}|${memo}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(momoFormat)}`;
   };
 
   return (
