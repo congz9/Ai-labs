@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Coffee, Heart, Copy, Check, QrCode, CreditCard, Sparkles, Maximize2, DollarSign, ExternalLink, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProfileInfo } from '../types';
@@ -18,12 +18,46 @@ const PRESET_AMOUNTS = [
 
 export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
   const [activeTab, setActiveTab] = useState<'bank' | 'paypal'>('bank');
+  // amount state wasn't even strictly used for anything other than updating side effects if any, but let's keep it just in case
   const [amount, setAmount] = useState<number>(20000);
   const [customAmount, setCustomAmount] = useState<string>('');
+  const [debouncedCustomAmount, setDebouncedCustomAmount] = useState<number>(0);
   const [selectedPreset, setSelectedPreset] = useState<number>(20000);
-  const [senderName, setSenderName] = useState<string>('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [zoomedImgUrl, setZoomedImgUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomAmount(parseInt(customAmount) || 0);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [customAmount]);
+
+  // SmoothImage component to prevent blinking when src changes
+  const SmoothImage = ({ src, alt, className, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+    const [loadedSrc, setLoadedSrc] = useState(src);
+    
+    // When src changes, keep showing old loadedSrc while new src loads in background
+    return (
+      <>
+        {src !== loadedSrc && (
+          <img 
+            src={src} 
+            alt="preload" 
+            className="hidden" 
+            onLoad={() => setLoadedSrc(src)} 
+            referrerPolicy="no-referrer"
+          />
+        )}
+        <img 
+          src={loadedSrc} 
+          alt={alt} 
+          className={className} 
+          {...props} 
+        />
+      </>
+    );
+  };
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
@@ -33,20 +67,13 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
 
   const getFinalAmount = () => {
     if (selectedPreset === 0) {
-      return parseInt(customAmount) || 0;
+      return debouncedCustomAmount;
     }
     return selectedPreset;
   };
 
   const getVietQRMemo = () => {
-    const cleanName = senderName
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .replace(/[^a-zA-Z0-9 ]/g, '');
-    const suffix = cleanName ? ` tu ${cleanName}` : '';
-    return `Ung ho AILABS${suffix}`.substring(0, 25);
+    return `Ung ho AILABS`.substring(0, 25);
   };
 
   const normalizeBankCode = (bankName: string): string => {
@@ -84,7 +111,7 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
     const memoClean = encodeURIComponent(getVietQRMemo());
 
     // Vietnamese banks transfer formats via VietQR API (compact2 template)
-    return `https://img.vietqr.io/image/${bankClean}-${accountClean}-compact2.jpg?amount=${currentAmount}&addInfo=${memoClean}&accountName=${nameClean}`;
+    return `https://img.vietqr.io/image/${bankClean}-${accountClean}-compact2.png?amount=${currentAmount}&addInfo=${memoClean}&accountName=${nameClean}`;
   };
 
   const getPaypalLinkWithAmount = () => {
@@ -176,31 +203,18 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
               </div>
 
               {/* Optional settings */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {selectedPreset === 0 && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Số tiền tự chọn (VNĐ)</label>
-                    <input
-                      type="number"
-                      placeholder="Ví dụ: 30000"
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
-                    />
-                  </div>
-                )}
-                <div className={`space-y-1.5 ${selectedPreset !== 0 ? 'col-span-2' : ''}`}>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tên của bạn (Tùy chọn)</label>
+              {selectedPreset === 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Số tiền tự chọn (VNĐ)</label>
                   <input
-                    type="text"
-                    maxLength={15}
-                    placeholder="Ví dụ: Minh"
-                    value={senderName}
-                    onChange={(e) => setSenderName(e.target.value)}
+                    type="number"
+                    placeholder="Ví dụ: 30000"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
                   />
                 </div>
-              </div>
+              )}
             </>
           )}
 
@@ -220,14 +234,14 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                     className="w-[170px] h-[170px] bg-white rounded-2xl p-2 border border-slate-100 shadow-sm flex items-center justify-center relative group overflow-hidden cursor-zoom-in text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     title="Bấm để phóng to mã QR"
                   >
-                    <img 
+                    <SmoothImage 
                       src={getVietQRUrl()} 
                       alt="VietQR Code" 
                       className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                       referrerPolicy="no-referrer"
                     />
                     {/* Hover indicator overlay */}
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
+                    <div className="absolute inset-0 z-20 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
                       <span className="bg-white/20 p-1.5 rounded-full backdrop-blur-sm">
                         <Maximize2 size={16} />
                       </span>
@@ -281,14 +295,14 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
                     className="w-[170px] h-[170px] bg-white rounded-2xl p-2 border border-slate-100 shadow-sm flex items-center justify-center relative group overflow-hidden cursor-zoom-in text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     title="Bấm để phóng to mã QR"
                   >
-                    <img 
+                    <SmoothImage 
                       src={getPaypalQRUrl()} 
                       alt="PayPal QR Code" 
                       className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                       referrerPolicy="no-referrer"
                     />
                     {/* Hover indicator overlay */}
-                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
+                    <div className="absolute inset-0 z-20 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-1.5 p-2 md:backdrop-blur-[1px]">
                       <span className="bg-white/20 p-1.5 rounded-full backdrop-blur-sm">
                         <Maximize2 size={16} />
                       </span>
@@ -345,8 +359,14 @@ export default function CoffeeModal({ profile, onClose }: CoffeeModalProps) {
           </AnimatePresence>
 
           {/* Hidden preloader to cache QR images and eliminate loading delays when switching tabs or changing amounts */}
-          <div className="hidden" aria-hidden="true">
-            {profile.bankAccount && <img src={getVietQRUrl()} alt="preload-vietqr" />}
+          <div className="absolute w-0 h-0 opacity-0 pointer-events-none overflow-hidden" aria-hidden="true">
+            {profile.bankAccount && PRESET_AMOUNTS.filter(p => p.value > 0).map(p => {
+               const bankClean = normalizeBankCode(profile.bankName || 'TCB');
+               const accountClean = profile.bankAccount || '';
+               const nameClean = encodeURIComponent(profile.bankOwner || '');
+               const memoClean = encodeURIComponent(getVietQRMemo());
+               return <img key={`preload-vqr-${p.value}`} src={`https://img.vietqr.io/image/${bankClean}-${accountClean}-compact2.png?amount=${p.value}&addInfo=${memoClean}&accountName=${nameClean}`} alt="" />
+            })}
             {profile.paypalLink && <img src={getPaypalQRUrl()} alt="preload-paypal" />}
           </div>
         </div>
